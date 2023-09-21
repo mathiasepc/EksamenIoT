@@ -121,6 +121,7 @@ void setup()
 
 void loop()
 {
+  //Henter temperatur
   sensors.requestTemperatures();
   float temperatureC = sensors.getTempCByIndex(0);
 
@@ -130,8 +131,8 @@ void loop()
     ws.cleanupClients();
 
     Serial.println(temperatureC);
-
-    // Eksempel: Udskriv en besked
+    
+    //send til client
     String temperatureString = String(temperatureC);
     ws.textAll(temperatureString);
 
