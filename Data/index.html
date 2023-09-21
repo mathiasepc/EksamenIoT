@@ -57,11 +57,13 @@ copies or substantial portions of the Software. -->
     credits: { enabled: false }
   });
 
+  //Når websocket åbner
   webSocket.onopen = function (event) {
     console.log('Connection opened');
     webSocket.send('get_temperature');
   }
 
+  //Når webSocket lukker
   webSocket.onclose = function (event) {
     if (event.wasClean) {
       console.log(`WebSocket-forbindelsen blev lukket korrekt, kode: ${event.code}, grund: ${event.reason}`);
@@ -73,11 +75,13 @@ copies or substantial portions of the Software. -->
     setTimeout(initWebSocket, 2000);
   }
 
+  
   webSocket.onmessage = function (event) {
     // Handle received temperature data here
     var x = (new Date()).getTime();
     var y = parseFloat(event.data);
 
+    //Lav graf
     if (chartT.series[0].data.length > 40) {
       chartT.series[0].addPoint([x, y], true, true, true);
     } else {
