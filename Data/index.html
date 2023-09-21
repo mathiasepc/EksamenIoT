@@ -48,8 +48,7 @@ copies or substantial portions of the Software. -->
     },
     xAxis: {
       type: 'datetime',
-      dateTimeLabelFormats: { second: '%H:%M:%S' },
-      title: { text: 'Sekunder' }
+      dateTimeLabelFormats: { second: '%H:%M:%S' }
     },
     yAxis: {
       title: { text: 'Temperature (Celsius)' }
@@ -75,7 +74,7 @@ copies or substantial portions of the Software. -->
     setTimeout(initWebSocket, 2000);
   }
 
-  
+
   webSocket.onmessage = function (event) {
     // Handle received temperature data here
     var x = (new Date()).getTime();
