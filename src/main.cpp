@@ -141,6 +141,20 @@ void setup() {
     }
   });
 
+  server.on("/clear_csv", HTTP_POST, [](AsyncWebServerRequest *request){
+    if (SD.remove("/data.txt")) {
+      File file = SD.open("/data.txt", FILE_WRITE);
+      if (file) {
+        file.close();
+        request->send(200, "text/plain", "CSV file cleared");
+      } else {
+        request->send(500, "text/plain", "Failed to create a new CSV file");
+      }
+    } else {
+      request->send(500, "text/plain", "Failed to delete CSV file");
+    }
+  });
+
   server.begin();
 
   // Enable Timer wake_up
