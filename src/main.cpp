@@ -302,13 +302,13 @@ void getTimeStamp()
 // Write the sensor readings on the SD card
 void logSDCard()
 {
+  readingID++;
   dataMessage = String(readingID) + "," + String(dayStamp) + "," + String(timeStamp) + "," +
                 String(temperature) + "\r\n";
   Serial.print("Save data: ");
   Serial.println(dataMessage);
   appendFile(SD, "/data.txt", dataMessage.c_str());
    // Increment readingID on every new reading
-  readingID++;
 }
 
 // Write to the SD card (DON'T MODIFY THIS FUNCTION)
