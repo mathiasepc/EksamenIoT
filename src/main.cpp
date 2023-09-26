@@ -20,20 +20,20 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
+float lastTemperature = -999.0;
+
 // Define deep sleep options
 uint64_t uS_TO_S_FACTOR = 1000000; // Conversion factor for micro seconds to seconds
 // Sleep for 10 minutes = 600 seconds
 uint64_t TIME_TO_SLEEP = 600;
 
 // Replace with your network credentials
-const char *ssid = "E308";
-const char *password = "98806829";
-
+const char *ssid = "Stofa32382";
+const char *password = "blote45taco16";
 
 // Define variables to keep track of time
-unsigned long previousMillis = 0; // Store the previous millis
+unsigned long previousMillis = 0;      // Store the previous millis
 const unsigned long interval = 300000; // 5 minutes in milliseconds
-
 
 // Define CS pin for the SD card module
 #define SD_CS 5
@@ -58,6 +58,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 // Temperature Sensor variables
 float temperature;
@@ -70,6 +71,47 @@ NTPClient timeClient(ntpUDP);
 String formattedDate;
 String dayStamp;
 String timeStamp;
+
+// Funktion til at håndtere WebSocket-data fra client
+void handleWebSocketData(AsyncWebSocketClient *client, uint8_t *data, size_t len)
+{
+  String command = String((char *)data);
+
+  if (command == "get_temperature")
+  {
+    // float temperatureC = sensors.getTempCByIndex(0);
+    String temperatureString = String(temperature);
+    client->text(temperatureString);
+  }
+}
+
+// Denne handler events med websocket
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+             void *arg, uint8_t *data, size_t len)
+{
+  switch (type)
+  {
+  case WS_EVT_CONNECT:
+    Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    break;
+  case WS_EVT_DISCONNECT:
+    Serial.printf("WebSocket client #%u disconnected\n", client->id());
+    break;
+  case WS_EVT_DATA:
+    // Kald separat funktion for at håndtere WebSocket-data
+    handleWebSocketData(client, data, len);
+    break;
+  case WS_EVT_PONG:
+  case WS_EVT_ERROR:
+    break;
+  }
+}
+
+void initWebSocket()
+{
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+}
 
 void setup()
 {
@@ -103,6 +145,11 @@ void setup()
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
+
+  initWebSocket();
+
+  // Print ESP32 Local IP Address
+  Serial.println(WiFi.localIP());
 
   // Initialize SD card
   SD.begin(SD_CS);
@@ -175,22 +222,16 @@ void setup()
 
   // Start the DallasTemperature library
   sensors.begin();
-
-  getReadings();
-  getTimeStamp();
-  logSDCard();
-
-  // Increment readingID on every new reading
-  readingID++;
 }
 
 void loop()
 {
-   // Get the current time
+  // Get the current time
   unsigned long currentMillis = millis();
 
   // Check if it's time to run esp_deep_sleep_start()
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillis >= interval)
+  {
     // Save the current time as the new "previous" time
     previousMillis = currentMillis;
 
@@ -198,6 +239,31 @@ void loop()
     Serial.println("DONE! Going to sleep now.");
     esp_deep_sleep_start();
   }
+
+  // Henter temperatur
+  sensors.requestTemperatures();
+  temperature = sensors.getTempCByIndex(0);
+
+  // Tjek for temperaturændring
+  if (temperature != lastTemperature)
+  {
+    ws.cleanupClients();
+
+    getReadings();
+    getTimeStamp();
+    logSDCard();
+
+    // Serial.println(temperature);
+
+    // //send til client
+    // String temperatureString = String(temperature);
+    // ws.textAll(temperatureString);
+
+    // Opdater lastTemperature
+    lastTemperature = temperature;
+  }
+
+  delay(5000);
 }
 
 // Function to get temperature
@@ -205,7 +271,8 @@ void getReadings()
 {
   sensors.requestTemperatures();
   temperature = sensors.getTempCByIndex(0); // Temperature in Celsius
-  // temperature = sensors.getTempFByIndex(0); // Temperature in Fahrenheit
+  String temperatureString = String(temperature);
+  ws.textAll(temperatureString);
   Serial.print("Temperature: ");
   Serial.println(temperature);
 }
@@ -240,6 +307,8 @@ void logSDCard()
   Serial.print("Save data: ");
   Serial.println(dataMessage);
   appendFile(SD, "/data.txt", dataMessage.c_str());
+   // Increment readingID on every new reading
+  readingID++;
 }
 
 // Write to the SD card (DON'T MODIFY THIS FUNCTION)

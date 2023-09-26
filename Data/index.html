@@ -29,12 +29,71 @@ copies or substantial portions of the Software. -->
 <body>
   <h2>ESP Weather Station</h2>
   <div class="container"></div>
+  <div id="chart-temperature" class="container" style="margin-top: 10px;"></div>
   <button id="downloadLink">Download CSV</button>
   <button id="clearButton"> Clear CSV</button>
 </body>
 <script>
+  var chartT = new Highcharts.Chart({
+    chart: { renderTo: 'chart-temperature' },
+    title: { text: 'DS18B20 Temperature' },
+    series: [{
+      showInLegend: false,
+      data: []
+    }],
+    plotOptions: {
+      line: {
+        animation: false,
+        dataLabels: { enabled: true }
+      },
+      series: { color: '#059e8a' }
+    },
+    xAxis: {
+      type: 'datetime',
+      dateTimeLabelFormats: { second: '%H:%M:%S' }
+    },
+    yAxis: {
+      title: { text: 'Temperature (Celsius)' }
+    },
+    credits: { enabled: false }
+  });
+
+  var webSocket = new WebSocket("ws://192.168.87.149/ws");
+
+   //Når websocket åbner
+   webSocket.onopen = function (event) {
+    console.log('Connection opened');
+    webSocket.send('get_temperature');
+  }
+
+  //Når webSocket lukker
+  webSocket.onclose = function (event) {
+    if (event.wasClean) {
+      console.log(`WebSocket-forbindelsen blev lukket korrekt, kode: ${event.code}, grund: ${event.reason}`);
+    } else {
+      console.error("WebSocket-forbindelsen blev afbrudt.");
+    }
+    
+    
+    setTimeout(initWebSocket, 2000);
+  }
+
+
+  webSocket.onmessage = function (event) {
+    // Handle received temperature data here
+    var x = (new Date()).getTime();
+    var y = parseFloat(event.data);
+
+    //Lav graf
+    if (chartT.series[0].data.length > 40) {
+      chartT.series[0].addPoint([x, y], true, true, true);
+    } else {
+      chartT.series[0].addPoint([x, y], true, false, true);
+    }
+  };
+
   document.getElementById("downloadLink").addEventListener("click", function() {
-    fetch("http://192.168.0.128/download_csv", {
+    fetch("http://192.168.87.149/download_csv", {
       method: "GET",
     })
     .then(response => response.blob())
@@ -54,7 +113,7 @@ copies or substantial portions of the Software. -->
   });
 
   document.getElementById("clearButton").addEventListener("click", function() {
-    fetch("/clear_csv", {
+    fetch("http://192.168.87.149/clear_csv", {
       method: "POST", // Use POST for actions that modify server state
     })
     .then(response => {
