@@ -23,7 +23,7 @@
 float lastTemperature = -999.0;
 
 // Define deep sleep options
-uint64_t uS_TO_S_FACTOR = 1000000; // Conversion factor for micro seconds to seconds
+uint64_t uS_TO_S_FACTOR = 1000000; // Conversion factor for microseconds to seconds
 // Sleep for 2 minutes = 120 seconds
 uint64_t TIME_TO_SLEEP = 120;
 
@@ -33,7 +33,7 @@ const char *password = "@C4mpD3tS3jl3r!";
 
 // Define variables to keep track of time
 unsigned long previousMillis = 0;                 // Store the previous millis
-const unsigned long interval = 30000;              // 5 minutes in milliseconds
+const unsigned long interval = 300000;             // 5 minutes in milliseconds
 const unsigned long intervalTemperatures = 60000; // 20 seconds interval
 
 // Temperature Sensor variables
@@ -79,7 +79,7 @@ String formattedDate;
 String dayStamp;
 String timeStamp;
 
-// Funktion til at håndtere WebSocket-data fra client
+// Function to handle WebSocket data from the client
 void handleWebSocketData(AsyncWebSocketClient *client, uint8_t *data, size_t len)
 {
   String command = String((char *)data);
@@ -92,7 +92,7 @@ void handleWebSocketData(AsyncWebSocketClient *client, uint8_t *data, size_t len
   }
 }
 
-// Denne handler events med websocket
+// This function handles WebSocket events
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len)
 {
@@ -105,7 +105,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
     break;
   case WS_EVT_DATA:
-    // Kald separat funktion for at håndtere WebSocket-data
+    // Call a separate function to handle WebSocket data
     handleWebSocketData(client, data, len);
     break;
   case WS_EVT_PONG:
@@ -140,7 +140,7 @@ void setup()
   Serial.println("");
   Serial.println("WiFi connected.");
 
-  // Initialize a NTPClient to get time
+  // Initialize an NTPClient to get time
   timeClient.begin();
   // Set offset time in seconds to adjust for your timezone, for example:
   // GMT +1 = 3600
@@ -186,7 +186,7 @@ void setup()
   File file = SD.open("/data.txt");
   if (!file)
   {
-    Serial.println("File doens't exist");
+    Serial.println("File doesn't exist");
     Serial.println("Creating file...");
     writeFile(SD, "/data.txt", "Reading ID, Date, Hour, Temperature \r\n");
   }
@@ -236,10 +236,11 @@ void setup()
 
 void loop()
 {
-    // Get the current time
+  // Get the current time
   unsigned long currentMillis = millis();
 
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillis >= interval)
+  {
     // Save the current time as the new "previous" time
     previousMillis = currentMillis;
 
@@ -248,12 +249,12 @@ void loop()
     esp_deep_sleep_start();
   }
 
-  // Tjek for temperaturændring
+  // Check for temperature change
   if (currentMillis - lastTemperatureMillis >= intervalTemperatures)
   {
     ws.cleanupClients();
 
-    // Henter temperatur
+    // Get temperature
     sensors.requestTemperatures();
     temperature = sensors.getTempCByIndex(0);
 
@@ -266,9 +267,9 @@ void loop()
   }
 }
 
+// This function is called when the button is pressed
 void buttonInterrupt()
 {
-  // This function is called when the button is pressed
   // Set the buttonPressed flag to true
   buttonPressed = true;
   Serial.println("Button pressed! Waking up from deep sleep.");
