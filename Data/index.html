@@ -58,7 +58,7 @@ copies or substantial portions of the Software. -->
     credits: { enabled: false }
   });
 
-  var webSocket = new WebSocket("ws://192.168.87.149/ws");
+  var webSocket = new WebSocket("ws://192.168.0.43/ws");
 
    //Når websocket åbner
    webSocket.onopen = function (event) {
@@ -93,7 +93,7 @@ copies or substantial portions of the Software. -->
   };
 
   document.getElementById("downloadLink").addEventListener("click", function() {
-    fetch("http://192.168.87.149/download_csv", {
+    fetch("http://192.168.0.43/download_csv", {
       method: "GET",
     })
     .then(response => response.blob())
@@ -113,7 +113,7 @@ copies or substantial portions of the Software. -->
   });
 
   document.getElementById("clearButton").addEventListener("click", function() {
-    fetch("http://192.168.87.149/clear_csv", {
+    fetch("http://192.168.0.43/clear_csv", {
       method: "POST", // Use POST for actions that modify server state
     })
     .then(response => {

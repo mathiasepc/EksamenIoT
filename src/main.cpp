@@ -24,19 +24,28 @@ float lastTemperature = -999.0;
 
 // Define deep sleep options
 uint64_t uS_TO_S_FACTOR = 1000000; // Conversion factor for micro seconds to seconds
-// Sleep for 10 minutes = 600 seconds
-uint64_t TIME_TO_SLEEP = 600;
+// Sleep for 2 minutes = 120 seconds
+uint64_t TIME_TO_SLEEP = 120;
 
 // Replace with your network credentials
-const char *ssid = "Stofa32382";
-const char *password = "blote45taco16";
+const char *ssid = "Spiderman";
+const char *password = "@C4mpD3tS3jl3r!";
 
 // Define variables to keep track of time
-unsigned long previousMillis = 0;      // Store the previous millis
-const unsigned long interval = 300000; // 5 minutes in milliseconds
+unsigned long previousMillis = 0;                 // Store the previous millis
+const unsigned long interval = 30000;              // 5 minutes in milliseconds
+const unsigned long intervalTemperatures = 60000; // 20 seconds interval
+
+// Temperature Sensor variables
+float temperature;
+unsigned long lastTemperatureMillis = 0;
 
 // Define CS pin for the SD card module
 #define SD_CS 5
+
+// Define the GPIO pin to which the button is connected
+#define buttonPin 14
+bool buttonPressed = false;
 
 // Prototype
 void writeFile(fs::FS &fs, const char *path, const char *message);
@@ -44,6 +53,7 @@ void getReadings();
 void getTimeStamp();
 void logSDCard();
 void appendFile(fs::FS &fs, const char *path, const char *message);
+void buttonInterrupt();
 
 // Save reading number on RTC memory
 RTC_DATA_ATTR int readingID = 0;
@@ -59,9 +69,6 @@ DallasTemperature sensors(&oneWire);
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
-
-// Temperature Sensor variables
-float temperature;
 
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
@@ -118,6 +125,9 @@ void setup()
   // Start serial communication for debugging purposes
   Serial.begin(115200);
 
+  pinMode(buttonPin, INPUT_PULLUP);                         // Configure the button pin as input with a pull-up resistor
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)buttonPin, LOW); // Configure the button pin as an external wake-up source
+
   // Connect to Wi-Fi network with SSID and password
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -137,7 +147,7 @@ void setup()
   // GMT +8 = 28800
   // GMT -1 = -3600
   // GMT 0 = 0
-  timeClient.setTimeOffset(3600);
+  timeClient.setTimeOffset(7200);
 
   // Initialize SPIFFS
   if (!SPIFFS.begin())
@@ -226,12 +236,10 @@ void setup()
 
 void loop()
 {
-  // Get the current time
+    // Get the current time
   unsigned long currentMillis = millis();
 
-  // Check if it's time to run esp_deep_sleep_start()
-  if (currentMillis - previousMillis >= interval)
-  {
+  if (currentMillis - previousMillis >= interval) {
     // Save the current time as the new "previous" time
     previousMillis = currentMillis;
 
@@ -240,30 +248,30 @@ void loop()
     esp_deep_sleep_start();
   }
 
-  // Henter temperatur
-  sensors.requestTemperatures();
-  temperature = sensors.getTempCByIndex(0);
-
   // Tjek for temperaturændring
-  if (temperature != lastTemperature)
+  if (currentMillis - lastTemperatureMillis >= intervalTemperatures)
   {
     ws.cleanupClients();
+
+    // Henter temperatur
+    sensors.requestTemperatures();
+    temperature = sensors.getTempCByIndex(0);
 
     getReadings();
     getTimeStamp();
     logSDCard();
 
-    // Serial.println(temperature);
-
-    // //send til client
-    // String temperatureString = String(temperature);
-    // ws.textAll(temperatureString);
-
-    // Opdater lastTemperature
-    lastTemperature = temperature;
+    // Update the timer for temperature readings
+    lastTemperatureMillis = currentMillis;
   }
+}
 
-  delay(5000);
+void buttonInterrupt()
+{
+  // This function is called when the button is pressed
+  // Set the buttonPressed flag to true
+  buttonPressed = true;
+  Serial.println("Button pressed! Waking up from deep sleep.");
 }
 
 // Function to get temperature
@@ -308,7 +316,7 @@ void logSDCard()
   Serial.print("Save data: ");
   Serial.println(dataMessage);
   appendFile(SD, "/data.txt", dataMessage.c_str());
-   // Increment readingID on every new reading
+  // Increment readingID on every new reading
 }
 
 // Write to the SD card (DON'T MODIFY THIS FUNCTION)
