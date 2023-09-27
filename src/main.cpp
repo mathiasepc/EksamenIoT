@@ -28,8 +28,8 @@ uint64_t uS_TO_S_FACTOR = 1000000; // Conversion factor for microseconds to seco
 uint64_t TIME_TO_SLEEP = 120;
 
 // Replace with your network credentials
-const char *ssid = "Spiderman";
-const char *password = "@C4mpD3tS3jl3r!";
+const char *ssid = "Hidden";
+const char *password = "Hidden";
 
 // Define variables to keep track of time
 unsigned long previousMillis = 0;                 // Store the previous millis
